@@ -1,4 +1,4 @@
-package gospec
+package spec
 
 import (
 	"slices"

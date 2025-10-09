@@ -1,4 +1,4 @@
-package gospec
+package spec
 
 // helper function to return a pointer to a value.
 // useful for values or params that may be nil.
