@@ -71,6 +71,36 @@ func (p *ProjectBuilder) Build() *Project {
 	return p.project
 }
 
+func (p *Project) BuildAll() error {
+	for _, spec := range p.Specs {
+		if err := p.applySpec(spec); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *Project) applySpec(spec Specification) error {
+	check, err := spec.Check(p)
+	if err != nil {
+		log.Warn().Str("project", p.Name).Type("spec", spec).Msg("Failed to check")
+		return err
+	}
+
+	if check {
+		log.Info().Str("project", p.Name).Type("spec", spec).Msg("Skipping; up to date")
+		return nil
+	}
+
+	log.Info().Str("project", p.Name).Type("spec", spec).Msg("Applying")
+	if err := spec.Apply(p); err != nil {
+		log.Warn().Str("project", p.Name).Type("spec", spec).Msg("Failed to apply")
+		return err
+	}
+
+	return nil
+}
+
 func RegisterProject(project *Project) {
 	log.Trace().Str("project", project.Name).Msg("Registering project")
 	projectsConfig = append(projectsConfig, *project)
