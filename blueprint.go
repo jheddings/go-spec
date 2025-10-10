@@ -45,6 +45,10 @@ func (b *BlueprintBuilder) WithSpec(spec Specification) *BlueprintBuilder {
 	return b
 }
 
+func (b *BlueprintBuilder) WithDeferredSpec(fn func() Specification) *BlueprintBuilder {
+	return b.WithSpec(&DeferredSpec{SpecFunc: fn})
+}
+
 func (b *BlueprintBuilder) WithSpecPresent(spec Specification) *BlueprintBuilder {
 	return b.WithSpec(&EnsureSpec{Spec: spec})
 }

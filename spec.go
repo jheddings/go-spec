@@ -37,3 +37,36 @@ func CreateSpec(name string, config any) (Specification, error) {
 	}
 	return factory(config)
 }
+
+type DeferredSpec struct {
+	SpecFunc func() Specification
+
+	lock sync.Mutex
+	spec *Specification
+}
+
+func (d *DeferredSpec) init() {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+	d.spec = Ptr(d.SpecFunc())
+}
+
+func (d *DeferredSpec) Check(project *Project) (bool, error) {
+	d.init()
+
+	if d.spec == nil {
+		return false, fmt.Errorf("unable to initialize deferred spec")
+	}
+
+	return (*d.spec).Check(project)
+}
+
+func (d *DeferredSpec) Apply(project *Project) error {
+	d.init()
+
+	if d.spec == nil {
+		return fmt.Errorf("unable to initialize deferred spec")
+	}
+
+	return (*d.spec).Apply(project)
+}
