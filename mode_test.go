@@ -2,7 +2,7 @@ package spec
 
 import "testing"
 
-type TestModeSpec struct {
+type TestSpec struct {
 	apply   bool
 	check   bool
 	equals  bool
@@ -11,88 +11,94 @@ type TestModeSpec struct {
 	remove  bool
 }
 
-func (t *TestModeSpec) Check(project *Project) (bool, error) {
+func (t *TestSpec) Check(project *Project) (bool, error) {
+	orig := t.check
 	t.check = true
-	return false, nil
+	return orig, nil
 }
 
-func (t *TestModeSpec) Apply(project *Project) error {
+func (t *TestSpec) Apply(project *Project) error {
 	t.apply = true
 	return nil
 }
 
-func (t *TestModeSpec) Equals(project *Project) (bool, error) {
+func (t *TestSpec) Equals(project *Project) (bool, error) {
+	orig := t.equals
 	t.equals = true
-	return false, nil
+	return orig, nil
 }
 
-func (t *TestModeSpec) Exists(project *Project) (bool, error) {
+func (t *TestSpec) Exists(project *Project) (bool, error) {
+	orig := t.exists
 	t.exists = true
-	return true, nil
+	return orig, nil
 }
 
-func (t *TestModeSpec) Replace(project *Project) error {
+func (t *TestSpec) Replace(project *Project) error {
 	t.replace = true
 	return nil
 }
 
-func (t *TestModeSpec) Remove(project *Project) error {
+func (t *TestSpec) Remove(project *Project) error {
 	t.remove = true
 	return nil
 }
 
-func TestEnsureSpec(t *testing.T) {
-	spec := &TestModeSpec{}
-	enSpec := &EnsureSpec{Spec: spec}
+func TestModalSpecs(t *testing.T) {
+	t.Run("ensure spec", func(t *testing.T) {
+		spec := &TestSpec{}
+		enSpec := &EnsureSpec{Spec: spec}
 
-	project := NewProject("test-ensure").WithSpec(enSpec).Build()
-	project.BuildAll()
+		project := NewProject("test-ensure").WithSpec(enSpec).Build()
+		project.BuildAll()
 
-	if !spec.check {
-		t.Fatal("failed to check")
-	}
+		if !spec.check {
+			t.Fatal("failed to check")
+		}
 
-	if !spec.apply {
-		t.Fatal("failed to apply")
-	}
-}
+		if !spec.apply {
+			t.Fatal("failed to apply")
+		}
+	})
 
-func TestRemoveSpec(t *testing.T) {
-	spec := &TestModeSpec{}
-	rmSpec := &RemoveSpec{Spec: spec}
+	t.Run("remove spec", func(t *testing.T) {
+		spec := &TestSpec{exists: true}
+		rmSpec := &RemoveSpec{Spec: spec}
 
-	project := NewProject("test-remove").WithSpec(rmSpec).Build()
-	project.BuildAll()
+		project := NewProject("test-remove").WithSpec(rmSpec).Build()
+		project.BuildAll()
 
-	if spec.check {
-		t.Fatal("should not have checked")
-	}
+		if spec.check {
+			t.Fatal("should not have checked")
+		}
 
-	if !spec.exists {
-		t.Fatal("failed to check exists")
-	}
+		if !spec.exists {
+			t.Fatal("failed to check exists")
+		}
 
-	if !spec.remove {
-		t.Fatal("failed to remove")
-	}
-}
+		if !spec.remove {
+			t.Fatal("failed to remove")
+		}
 
-func TestReplaceSpec(t *testing.T) {
-	spec := &TestModeSpec{}
-	repSpec := &ReplaceSpec{Spec: spec}
+	})
 
-	project := NewProject("test-replace").WithSpec(repSpec).Build()
-	project.BuildAll()
+	t.Run("replace spec", func(t *testing.T) {
+		spec := &TestSpec{}
+		repSpec := &ReplaceSpec{Spec: spec}
 
-	if spec.check {
-		t.Fatal("should not have checked")
-	}
+		project := NewProject("test-replace").WithSpec(repSpec).Build()
+		project.BuildAll()
 
-	if !spec.equals {
-		t.Fatal("failed to check equals")
-	}
+		if spec.check {
+			t.Fatal("should not have checked")
+		}
 
-	if !spec.replace {
-		t.Fatal("failed to replace")
-	}
+		if !spec.equals {
+			t.Fatal("failed to check equals")
+		}
+
+		if !spec.replace {
+			t.Fatal("failed to replace")
+		}
+	})
 }
