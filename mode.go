@@ -30,7 +30,7 @@ type ReplaceableSpec interface {
 	Replace(project *Project) error
 }
 
-// PresentSpec methods
+// EnsureSpec methods
 func (m *EnsureSpec) Check(project *Project) (bool, error) {
 	return m.Spec.Check(project)
 }
