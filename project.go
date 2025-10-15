@@ -11,6 +11,7 @@ type Project struct {
 	Desc  string
 	Path  string
 	URL   string
+	Vars  map[string]any
 	Specs []Specification
 }
 
@@ -25,6 +26,7 @@ func NewProject(name string) *ProjectBuilder {
 		project: &Project{
 			Name:  name,
 			Desc:  "",
+			Vars:  make(map[string]any),
 			Specs: []Specification{},
 		},
 	}
@@ -42,6 +44,11 @@ func (p *ProjectBuilder) WithPath(path string) *ProjectBuilder {
 
 func (p *ProjectBuilder) WithHomepage(url string) *ProjectBuilder {
 	p.project.URL = url
+	return p
+}
+
+func (p *ProjectBuilder) WithVar(name string, value any) *ProjectBuilder {
+	p.project.Vars[name] = value
 	return p
 }
 
