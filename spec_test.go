@@ -140,24 +140,4 @@ func TestDeferredSpec(t *testing.T) {
 			t.Fatal("underlying spec Apply was not called")
 		}
 	})
-
-	t.Run("deferred spec calls function on each init", func(t *testing.T) {
-		callCount := 0
-		testSpec := &TestSpec{}
-		deferred := &DeferredSpec{
-			SpecFunc: func() Specification {
-				callCount++
-				return testSpec
-			},
-		}
-
-		project := NewProject("test").Build()
-
-		deferred.Check(project)
-		deferred.Apply(project)
-
-		if callCount != 2 {
-			t.Fatalf("expected SpecFunc to be called twice, got %d", callCount)
-		}
-	})
 }

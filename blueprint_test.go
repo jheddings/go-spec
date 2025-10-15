@@ -31,148 +31,173 @@ func TestRegisterBlueprint(t *testing.T) {
 }
 
 func TestBlueprintBuilder(t *testing.T) {
-	tests := []struct {
-		name          string
-		buildFunc     func(*BlueprintBuilder) *BlueprintBuilder
-		expectedSpecs int
-		validate      func(*testing.T, *Blueprint)
-	}{
-		{
-			name: "basic blueprint",
-			buildFunc: func(b *BlueprintBuilder) *BlueprintBuilder {
-				return b
-			},
-			expectedSpecs: 0,
-			validate: func(t *testing.T, bp *Blueprint) {
-				if bp.Name != "test-bp" {
-					t.Fatalf("expected name test-bp, got %s", bp.Name)
-				}
-			},
-		},
-		{
-			name: "with single spec",
-			buildFunc: func(b *BlueprintBuilder) *BlueprintBuilder {
-				return b.WithSpec(&TestSpec{})
-			},
-			expectedSpecs: 1,
-			validate: func(t *testing.T, bp *Blueprint) {
-				if _, ok := bp.Specs[0].(*TestSpec); !ok {
-					t.Fatal("expected TestModeSpec")
-				}
-			},
-		},
-		{
-			name: "with multiple specs",
-			buildFunc: func(b *BlueprintBuilder) *BlueprintBuilder {
-				return b.
-					WithSpec(&TestSpec{}).
-					WithSpec(&TestSpec{})
-			},
-			expectedSpecs: 2,
-			validate:      nil,
-		},
-		{
-			name: "with deferred spec",
-			buildFunc: func(b *BlueprintBuilder) *BlueprintBuilder {
-				return b.WithDeferredSpec(func() Specification {
-					return &TestSpec{}
-				})
-			},
-			expectedSpecs: 1,
-			validate: func(t *testing.T, bp *Blueprint) {
-				if _, ok := bp.Specs[0].(*DeferredSpec); !ok {
-					t.Fatal("expected DeferredSpec")
-				}
-			},
-		},
-		{
-			name: "with spec present",
-			buildFunc: func(b *BlueprintBuilder) *BlueprintBuilder {
-				return b.WithSpecPresent(&TestSpec{})
-			},
-			expectedSpecs: 1,
-			validate: func(t *testing.T, bp *Blueprint) {
-				if _, ok := bp.Specs[0].(*EnsureSpec); !ok {
-					t.Fatal("expected EnsureSpec")
-				}
-			},
-		},
-		{
-			name: "with spec remove",
-			buildFunc: func(b *BlueprintBuilder) *BlueprintBuilder {
-				return b.WithSpecRemove(&TestSpec{})
-			},
-			expectedSpecs: 1,
-			validate: func(t *testing.T, bp *Blueprint) {
-				if _, ok := bp.Specs[0].(*RemoveSpec); !ok {
-					t.Fatal("expected RemoveSpec")
-				}
-			},
-		},
-		{
-			name: "with spec replace",
-			buildFunc: func(b *BlueprintBuilder) *BlueprintBuilder {
-				return b.WithSpecReplace(&TestSpec{})
-			},
-			expectedSpecs: 1,
-			validate: func(t *testing.T, bp *Blueprint) {
-				if _, ok := bp.Specs[0].(*ReplaceSpec); !ok {
-					t.Fatal("expected ReplaceSpec")
-				}
-			},
-		},
-		{
-			name: "with nested blueprint",
-			buildFunc: func(b *BlueprintBuilder) *BlueprintBuilder {
-				nested := Blueprint{
-					Name: "nested",
-					Specs: []Specification{
-						&TestSpec{},
-						&TestSpec{},
-					},
-				}
-				return b.WithBlueprint(nested)
-			},
-			expectedSpecs: 2,
-			validate:      nil,
-		},
-		{
-			name: "complex blueprint",
-			buildFunc: func(b *BlueprintBuilder) *BlueprintBuilder {
-				nested := Blueprint{
-					Name: "nested",
-					Specs: []Specification{
-						&TestSpec{},
-					},
-				}
-				return b.
-					WithSpec(&TestSpec{}).
-					WithSpecPresent(&TestSpec{}).
-					WithBlueprint(nested).
-					WithSpecRemove(&TestSpec{})
-			},
-			expectedSpecs: 4,
-			validate:      nil,
-		},
-	}
+	t.Run("basic blueprint", func(t *testing.T) {
+		builder := NewBlueprint("test-bp")
+		bp := builder.Build()
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			builder := NewBlueprint("test-bp")
-			builder = tt.buildFunc(builder)
-			bp := builder.Build()
+		if bp == nil {
+			t.Fatal("Build returned nil")
+		}
 
-			if bp == nil {
-				t.Fatal("Build returned nil")
-			}
+		if len(bp.Specs) != 0 {
+			t.Fatalf("expected 0 specs, got %d", len(bp.Specs))
+		}
 
-			if len(bp.Specs) != tt.expectedSpecs {
-				t.Fatalf("expected %d specs, got %d", tt.expectedSpecs, len(bp.Specs))
-			}
+		if bp.Name != "test-bp" {
+			t.Fatalf("expected name test-bp, got %s", bp.Name)
+		}
+	})
 
-			if tt.validate != nil {
-				tt.validate(t, bp)
-			}
+	t.Run("with single spec", func(t *testing.T) {
+		builder := NewBlueprint("test-bp")
+		builder = builder.WithSpec(&TestSpec{})
+		bp := builder.Build()
+
+		if bp == nil {
+			t.Fatal("Build returned nil")
+		}
+
+		if len(bp.Specs) != 1 {
+			t.Fatalf("expected 1 specs, got %d", len(bp.Specs))
+		}
+
+		if _, ok := bp.Specs[0].(*TestSpec); !ok {
+			t.Fatal("expected TestModeSpec")
+		}
+	})
+
+	t.Run("with multiple specs", func(t *testing.T) {
+		builder := NewBlueprint("test-bp")
+		builder = builder.
+			WithSpec(&TestSpec{}).
+			WithSpec(&TestSpec{})
+		bp := builder.Build()
+
+		if bp == nil {
+			t.Fatal("Build returned nil")
+		}
+
+		if len(bp.Specs) != 2 {
+			t.Fatalf("expected 2 specs, got %d", len(bp.Specs))
+		}
+	})
+
+	t.Run("with deferred spec", func(t *testing.T) {
+		builder := NewBlueprint("test-bp")
+		builder = builder.WithDeferredSpec(func() Specification {
+			return &TestSpec{}
 		})
-	}
+		bp := builder.Build()
+
+		if bp == nil {
+			t.Fatal("Build returned nil")
+		}
+
+		if len(bp.Specs) != 1 {
+			t.Fatalf("expected 1 specs, got %d", len(bp.Specs))
+		}
+
+		if _, ok := bp.Specs[0].(*DeferredSpec); !ok {
+			t.Fatal("expected DeferredSpec")
+		}
+	})
+
+	t.Run("with spec present", func(t *testing.T) {
+		builder := NewBlueprint("test-bp")
+		builder = builder.WithSpecPresent(&TestSpec{})
+		bp := builder.Build()
+
+		if bp == nil {
+			t.Fatal("Build returned nil")
+		}
+
+		if len(bp.Specs) != 1 {
+			t.Fatalf("expected 1 specs, got %d", len(bp.Specs))
+		}
+
+		if _, ok := bp.Specs[0].(*EnsureSpec); !ok {
+			t.Fatal("expected EnsureSpec")
+		}
+	})
+
+	t.Run("with spec remove", func(t *testing.T) {
+		builder := NewBlueprint("test-bp")
+		builder = builder.WithSpecRemove(&TestSpec{})
+		bp := builder.Build()
+
+		if bp == nil {
+			t.Fatal("Build returned nil")
+		}
+
+		if len(bp.Specs) != 1 {
+			t.Fatalf("expected 1 specs, got %d", len(bp.Specs))
+		}
+
+		if _, ok := bp.Specs[0].(*RemoveSpec); !ok {
+			t.Fatal("expected RemoveSpec")
+		}
+	})
+
+	t.Run("with spec replace", func(t *testing.T) {
+		builder := NewBlueprint("test-bp")
+		builder = builder.WithSpecReplace(&TestSpec{})
+		bp := builder.Build()
+
+		if bp == nil {
+			t.Fatal("Build returned nil")
+		}
+
+		if len(bp.Specs) != 1 {
+			t.Fatalf("expected 1 specs, got %d", len(bp.Specs))
+		}
+
+		if _, ok := bp.Specs[0].(*ReplaceSpec); !ok {
+			t.Fatal("expected ReplaceSpec")
+		}
+	})
+
+	t.Run("with nested blueprint", func(t *testing.T) {
+		builder := NewBlueprint("test-bp")
+		nested := Blueprint{
+			Name: "nested-bp",
+			Specs: []Specification{
+				&TestSpec{},
+				&TestSpec{},
+			},
+		}
+		builder = builder.WithBlueprint(nested)
+		bp := builder.Build()
+
+		if bp == nil {
+			t.Fatal("Build returned nil")
+		}
+
+		if len(bp.Specs) != 2 {
+			t.Fatalf("expected 2 specs, got %d", len(bp.Specs))
+		}
+	})
+
+	t.Run("complex blueprint", func(t *testing.T) {
+		builder := NewBlueprint("test-bp")
+		nested := Blueprint{
+			Name: "nested",
+			Specs: []Specification{
+				&TestSpec{},
+			},
+		}
+		builder = builder.
+			WithSpec(&TestSpec{}).
+			WithSpecPresent(&TestSpec{}).
+			WithBlueprint(nested).
+			WithSpecRemove(&TestSpec{})
+		bp := builder.Build()
+
+		if bp == nil {
+			t.Fatal("Build returned nil")
+		}
+
+		if len(bp.Specs) != 4 {
+			t.Fatalf("expected 4 specs, got %d", len(bp.Specs))
+		}
+	})
 }
