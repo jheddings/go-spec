@@ -24,7 +24,7 @@ func TestRegisterSpec(t *testing.T) {
 		t.Fatal("factory is nil")
 	}
 
-	// clean up
+	// clean up - need write lock
 	specRegistry.lock.RUnlock()
 	specRegistry.lock.Lock()
 	delete(specRegistry.specs, "test-spec")
