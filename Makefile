@@ -7,7 +7,7 @@ APPNAME ?= spec
 APPVER ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 
 .PHONY: all
-all: build test
+all: test build
 
 
 .PHONY: init
